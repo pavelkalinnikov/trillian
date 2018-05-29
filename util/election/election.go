@@ -24,22 +24,11 @@ import (
 // MasterElection provides operations for determining if a local instance is
 // the current master for a particular election.
 type MasterElection interface {
-	// Start kicks off this instance's participation in master election.
-	Start(context.Context) error
-	// WaitForMastership blocks until the current instance is the master.
 	WaitForMastership(context.Context) error
-	// IsMaster returns whether the current instance is the master.
 	IsMaster(context.Context) (bool, error)
-	// Resign releases mastership, and stops this instance from participating in
-	// the master election.
+	GetCurrentMaster(context.Context) (string, error) // FIXME
 	Resign(context.Context) error
-	// Close releases all the resources associated with this MasterElection.
 	Close(context.Context) error
-	// GetCurrentMaster returns the instance ID of the current elected master, if
-	// any. Implementations should allow election participants to specify their
-	// instance ID string, participants should ensure that it is unique to them.
-	// If there is currently no master, ErrNoMaster will be returned.
-	GetCurrentMaster(context.Context) (string, error)
 }
 
 // ErrNoMaster indicates that there is currently no master elected.
@@ -56,11 +45,6 @@ type NoopElection struct {
 	instanceID string
 }
 
-// Start kicks off the process of mastership election.
-func (ne *NoopElection) Start(ctx context.Context) error {
-	return nil
-}
-
 // WaitForMastership blocks until the current instance is master for this election.
 func (ne *NoopElection) WaitForMastership(ctx context.Context) error {
 	return nil
@@ -71,7 +55,11 @@ func (ne *NoopElection) IsMaster(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-// Resign releases mastership.
+// GetCurrentMaster returns ne.instanceID
+func (ne *NoopElection) GetCurrentMaster(ctx context.Context) (string, error) {
+	return ne.instanceID, nil
+}
+
 func (ne *NoopElection) Resign(ctx context.Context) error {
 	return nil
 }
@@ -79,11 +67,6 @@ func (ne *NoopElection) Resign(ctx context.Context) error {
 // Close permanently stops the mastership election process.
 func (ne *NoopElection) Close(ctx context.Context) error {
 	return nil
-}
-
-// GetCurrentMaster returns ne.instanceID
-func (ne *NoopElection) GetCurrentMaster(ctx context.Context) (string, error) {
-	return ne.instanceID, nil
 }
 
 // NoopFactory creates NoopElection instances.
