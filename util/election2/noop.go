@@ -16,8 +16,14 @@ package election2
 
 import "context"
 
-// NoopElection is a stub Election that always believes to be the master.
+// NoopElection is a stub Election that always believes to be the master. The
+// underlying string value is the instance ID that created this object.
 type NoopElection string
+
+// GetMaster returns this instance's ID, as it is always the master.
+func (ne NoopElection) GetMaster(ctx context.Context) (string, error) {
+	return string(ne), nil
+}
 
 // Await returns immediately, as the instance is always the master.
 func (ne NoopElection) Await(ctx context.Context) error {
@@ -39,10 +45,11 @@ func (ne NoopElection) Close(ctx context.Context) error {
 	return nil
 }
 
-// NoopFactory creates NoopElection instances.
-type NoopFactory struct{}
+// NoopFactory creates NoopElection instances. The underlying string value is
+// the instance ID of this factory.
+type NoopFactory string
 
 // NewElection creates a specific NoopElection instance.
-func (nf NoopFactory) NewElection(ctx context.Context, resourceID string) (Election, error) {
-	return NoopElection(resourceID), nil
+func (nf NoopFactory) NewElection(ctx context.Context, resID string) (Election, error) {
+	return NoopElection(string(nf)), nil
 }

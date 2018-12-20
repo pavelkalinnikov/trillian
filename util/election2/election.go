@@ -31,11 +31,27 @@
 // TODO(pavelkalinnikov): Merge this package with util/election.
 package election2
 
-import "context"
+import (
+	"context"
+	"errors"
+)
+
+// ErrNoMaster indicates that there is currently no master elected.
+var ErrNoMaster = errors.New("no master")
 
 // Election controls an instance's participation in master election process.
 // Note: Implementations are not intended to be thread-safe.
 type Election interface {
+	// GetMaster returns the instance ID of the current elected master, or
+	// ErrNoMaster error if there is no master. Implementations should allow
+	// instances to specify their ID string unique among all the paraticipants.
+	//
+	// TODO(pavelkalinnikov): Consider making this method a passive subscription
+	// to all mastership updates.
+	// TODO(pavelkalinnikov): Consider returning a generic mastership info struct
+	// instead of just the instance ID.
+	GetMaster(context.Context) (string, error)
+
 	// Await blocks until the instance captures mastership. Returns immediately
 	// if it is already the master. Returns an error if capturing fails, or the
 	// passed in context is canceled before mastership is captured. If an error

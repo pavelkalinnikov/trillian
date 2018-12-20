@@ -24,6 +24,9 @@ import (
 	"github.com/google/trillian/util/election2"
 )
 
+// TODO(pavelkalinnikov): Don't assume the instance ID is always this.
+const InstanceID = "testID"
+
 // Tests is the full list of available Election tests.
 // TODO(pavelkalinnikov): Add tests for unexpected mastership loss.
 var Tests = []NamedTest{
@@ -59,6 +62,19 @@ func checkDone(ctx context.Context, t *testing.T, wait time.Duration) {
 		}
 	} else if err := clock.SleepContext(ctx, wait); err == nil {
 		t.Errorf("expected context done within %v", wait)
+	}
+}
+
+// checkMaster ensures that GetMaster returns the correct instance ID in a
+// single instance scenario.
+func checkMaster(ctx context.Context, t *testing.T, e election2.Election, isMaster bool) {
+	t.Helper()
+	wantID, wantErr := "", election2.ErrNoMaster
+	if isMaster {
+		wantID, wantErr = InstanceID, nil
+	}
+	if id, err := e.GetMaster(ctx); id != wantID || err != wantErr {
+		t.Errorf("GetMaster(): %q, %v; want %q, %v", id, err, wantID, wantErr)
 	}
 }
 
@@ -186,10 +202,13 @@ func runElectionResign(t *testing.T, f election2.Factory) {
 				t.Errorf("Resign(): %v, want %v", got, want)
 			}
 			if tc.beMaster && tc.wantErr == nil {
+				checkMaster(ctx, t, d, false)
 				checkDone(mctx, t, 1*time.Second)
 			} else if tc.beMaster {
+				checkMaster(ctx, t, d, true)
 				checkNotDone(mctx, t)
 			} else {
+				checkMaster(ctx, t, d, false)
 				checkDone(mctx, t, 0)
 			}
 		})
@@ -240,10 +259,13 @@ func runElectionClose(t *testing.T, f election2.Factory) {
 				t.Errorf("Close(): %v, want %v", got, want)
 			}
 			if tc.beMaster && tc.wantErr == nil {
+				checkMaster(ctx, t, d, false)
 				checkDone(mctx, t, 1*time.Second)
 			} else if tc.beMaster {
+				checkMaster(ctx, t, d, true)
 				checkNotDone(mctx, t)
 			} else {
+				checkMaster(ctx, t, d, false)
 				checkDone(mctx, t, 0)
 			}
 		})
@@ -253,7 +275,7 @@ func runElectionClose(t *testing.T, f election2.Factory) {
 // runElectionLoop runs a typical mastership loop.
 func runElectionLoop(t *testing.T, f election2.Factory) {
 	ctx := context.Background()
-	e, err := f.NewElection(ctx, "testID")
+	e, err := f.NewElection(ctx, "testResourceID")
 	if err != nil {
 		t.Fatalf("NewElection(): %v", err)
 	}
@@ -267,17 +289,21 @@ func runElectionLoop(t *testing.T, f election2.Factory) {
 
 	for i := 0; i < 10; i++ {
 		t.Logf("Mastership iteration: %d", i)
+		checkMaster(ctx, t, d, false)
 		if err := d.Await(ctx); err != nil {
 			t.Fatalf("Await(): %v", err)
 		}
+		checkMaster(ctx, t, d, true)
 		mctx, err := d.WithMastership(ctx)
 		if err != nil {
 			t.Fatalf("WithMastership(): %v", err)
 		}
 		checkNotDone(mctx, t) // Do some work as master.
+		checkMaster(ctx, t, d, true)
 		if err := d.Resign(ctx); err != nil {
 			t.Errorf("Resign(): %v", err)
 		}
+		checkMaster(ctx, t, d, false)
 		checkDone(mctx, t, 1*time.Second) // The mastership context should close.
 	}
 }

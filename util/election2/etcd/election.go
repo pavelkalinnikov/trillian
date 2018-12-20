@@ -39,6 +39,21 @@ type Election struct {
 	election *concurrency.Election
 }
 
+// GetMaster returns the instance ID of the current master, or ErrNoMaster.
+func (e *Election) GetMaster(ctx context.Context) (string, error) {
+	leader, err := e.election.Leader(ctx)
+	if err == concurrency.ErrElectionNoLeader {
+		return "", election2.ErrNoMaster
+	} else if err != nil {
+		return "", err
+	}
+	id := string(leader.Kvs[0].Value)
+	if id == resignID || len(id) == 0 {
+		return "", election2.ErrNoMaster
+	}
+	return id, nil
+}
+
 // Await blocks until the instance captures mastership.
 func (e *Election) Await(ctx context.Context) error {
 	return e.election.Campaign(ctx, e.instanceID)

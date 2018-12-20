@@ -114,7 +114,7 @@ func main() {
 	switch {
 	case *forceMaster:
 		glog.Warning("**** Acting as master for all logs ****")
-		electionFactory = election2.NoopFactory{}
+		electionFactory = election2.NoopFactory(instanceID)
 	case client != nil:
 		electionFactory = etcdelect.NewFactory(instanceID, client, *lockDir)
 	default:

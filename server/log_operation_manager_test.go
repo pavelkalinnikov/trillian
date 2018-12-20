@@ -363,7 +363,7 @@ func TestMasterFor(t *testing.T) {
 		want2   []int64
 	}{
 		{desc: "no-factory", factory: nil, want1: firstIDs, want2: allIDs},
-		{desc: "noop-factory", factory: election2.NoopFactory{}, want1: firstIDs, want2: allIDs},
+		{desc: "noop-factory", factory: election2.NoopFactory("test"), want1: firstIDs, want2: allIDs},
 		{desc: "master-for-even", factory: masterForEvenFactory{}, want1: []int64{2, 4}, want2: []int64{2, 4, 6}},
 		{desc: "failure-factory", factory: failureFactory{}, want1: nil, want2: nil},
 	}
@@ -404,7 +404,7 @@ func (m masterForEvenFactory) NewElection(ctx context.Context, treeID string) (e
 		return nil, err
 	}
 	isMaster := (id % 2) == 0
-	d := eto.NewDecorator(eto.NewElection())
+	d := eto.NewDecorator(eto.NewElection("test"))
 	d.BlockAwait(!isMaster)
 	return d, nil
 }

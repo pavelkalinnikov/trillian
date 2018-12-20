@@ -23,6 +23,7 @@ import (
 
 // Errs contains errors to be returned by each of Election methods.
 type Errs struct {
+	GetMaster      error
 	Await          error
 	WithMastership error
 	Resign         error
@@ -58,6 +59,17 @@ func (d *Decorator) BlockAwait(block bool) {
 	defer d.mu.Unlock()
 	d.block = block
 	d.cond.Broadcast()
+}
+
+// GetMaster returns the instance ID of the current master, or ErrNoMaster.
+// TODO(pavelkalinnikov): Add test for this method.
+func (d *Decorator) GetMaster(ctx context.Context) (string, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if err := d.errs.GetMaster; err != nil {
+		return "", err
+	}
+	return d.e.GetMaster(ctx)
 }
 
 // Await blocks until the instance captures mastership.

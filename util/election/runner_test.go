@@ -100,7 +100,7 @@ func TestElectionRunnerRun(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			e := to.NewElection()
+			e := to.NewElection("test")
 			d := to.NewDecorator(e)
 			d.Update(tc.errs)
 			d.BlockAwait(!tc.isMaster)

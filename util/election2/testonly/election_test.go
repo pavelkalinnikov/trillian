@@ -21,9 +21,10 @@ import (
 )
 
 func TestElection(t *testing.T) {
+	fact := testonly.Factory(testonly.InstanceID)
 	for _, test := range testonly.Tests {
 		t.Run(test.Name, func(t *testing.T) {
-			test.Run(t, testonly.Factory)
+			test.Run(t, fact)
 		})
 	}
 }

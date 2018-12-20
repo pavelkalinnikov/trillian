@@ -22,11 +22,9 @@ import (
 	"github.com/google/trillian/util/election2"
 )
 
-// Factory allows creating Election instances for testing.
-var Factory factory
-
 // Election implements election2.Election interface for testing.
 type Election struct {
+	instID   string
 	isMaster bool
 	revision int
 	mu       sync.Mutex
@@ -34,8 +32,8 @@ type Election struct {
 }
 
 // NewElection returns a new initialized Election for testing.
-func NewElection() *Election {
-	e := &Election{}
+func NewElection(instID string) *Election {
+	e := &Election{instID: instID}
 	e.cond = sync.NewCond(&e.mu)
 	return e
 }
@@ -45,6 +43,16 @@ func (e *Election) update(isMaster bool) {
 	e.isMaster = isMaster
 	e.revision++
 	e.cond.Broadcast()
+}
+
+// GetMaster returns this instance's ID if it is the master, or ErrNoMaster.
+func (e *Election) GetMaster(ctx context.Context) (string, error) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.isMaster {
+		return e.instID, nil
+	}
+	return "", election2.ErrNoMaster
 }
 
 // Await sets this instance to be the master. It always succeeds. To imitate
@@ -107,11 +115,12 @@ func watchContext(ctx context.Context, l sync.Locker, cond *sync.Cond) (context.
 	return cctx, cancel
 }
 
-// factory allows creating Election instances.
-type factory struct{}
+// Factory allows creating Election instances. The underlying string is the
+// instance ID of this factory.
+type Factory string
 
 // NewElection creates a new Election instance.
-// TODO(pavelkalinnikov): Use resourceID in tests with multiple resources.
-func (f factory) NewElection(ctx context.Context, resourceID string) (election2.Election, error) {
-	return NewElection(), nil
+func (f Factory) NewElection(ctx context.Context, resID string) (election2.Election, error) {
+	// TODO(pavelkalinnikov): Use resource ID in tests.
+	return NewElection(string(f)), nil
 }

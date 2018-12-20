@@ -31,7 +31,7 @@ func TestElection(t *testing.T) {
 
 	for _, nt := range testonly.Tests {
 		// Create a new Factory for each test for better isolation.
-		fact := NewFactory("testID", client, fmt.Sprintf("%s/resources/", nt.Name))
+		fact := NewFactory(testonly.InstanceID, client, fmt.Sprintf("%s/resources/", nt.Name))
 		t.Run(nt.Name, func(t *testing.T) {
 			nt.Run(t, fact)
 		})
