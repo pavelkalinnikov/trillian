@@ -275,8 +275,12 @@ func TestRepopulateLogSubtree(t *testing.T) {
 				cmtStorage.InternalNodes[sfx.String()] = hash
 			}
 		}
-		if err := cmt.AddLeafHash(leafHash, store); err != nil {
+		if err := cmt.AppendLeafHash(leafHash, store); err != nil {
 			t.Fatalf("merkle tree update failed: %v", err)
+		}
+		root, err := cmt.CalculateRoot(store)
+		if err != nil {
+			t.Fatalf("CalculateRoot: %v", err)
 		}
 
 		nodeID := storage.NewNodeIDFromPrefix(s.Prefix, logStrataDepth, numLeaves-1, logStrataDepth, maxLogDepth)
@@ -292,10 +296,6 @@ func TestRepopulateLogSubtree(t *testing.T) {
 
 		if err := populateTheThing(&s); err != nil {
 			t.Fatalf("failed populate subtree: %v", err)
-		}
-		root, err := cmt.CurrentRoot()
-		if err != nil {
-			t.Fatalf("CurrentRoot: %v", err)
 		}
 		if got, expected := s.RootHash, root; !bytes.Equal(got, expected) {
 			t.Fatalf("Got root %v for tree size %d, expected %v. subtree:\n%#v", got, numLeaves, expected, s.String())

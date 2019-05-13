@@ -88,11 +88,11 @@ func populateLogSubtreeNodes(hasher hashers.LogHasher) storage.PopulateSubtreeFu
 			if size, expected := cmt.Size(), leafIndex; size != expected {
 				return fmt.Errorf("got size of %d, but expected %d", size, expected)
 			}
-			if err := cmt.AddLeafHash(h, store); err != nil {
+			if err := cmt.AppendLeafHash(h, store); err != nil {
 				return err
 			}
 		}
-		root, err := cmt.CurrentRoot()
+		root, err := cmt.CalculateRoot(store)
 		if err != nil {
 			return fmt.Errorf("failed to compute root hash: %v", err)
 		}
