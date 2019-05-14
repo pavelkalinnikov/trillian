@@ -83,7 +83,7 @@ func TestAddingLeaves(t *testing.T) {
 			idx := 0
 			for _, br := range tc.breaks {
 				for ; idx < br; idx++ {
-					if _, err := tree.AppendLeaf(inputs[idx], func(NodeID, []byte) {}); err != nil {
+					if _, err := tree.AppendLeaf(inputs[idx], nil); err != nil {
 						t.Fatalf("AppendLeaf: %v", err)
 					}
 					if err := checkUnusedNodesInvariant(tree); err != nil {
@@ -226,8 +226,7 @@ func TestCompactVsFullTree(t *testing.T) {
 	cmt := NewTree(rfc6962.DefaultHasher)
 	for i := int64(0); i < imt.LeafCount(); i++ {
 		newLeaf := []byte(fmt.Sprintf("Leaf %d", i))
-		_, err := cmt.AppendLeaf(newLeaf, func(NodeID, []byte) {})
-		if err != nil {
+		if _, err := cmt.AppendLeaf(newLeaf, nil); err != nil {
 			t.Fatalf("AppendLeaf(%d)=_,_,%v, want _,_,nil", i, err)
 		}
 		if got, want := cmt.Size(), i+1; got != want {
@@ -264,7 +263,7 @@ func TestRootHashForVariousTreeSizes(t *testing.T) {
 		tree := NewTree(rfc6962.DefaultHasher)
 		for i := int64(0); i < test.size; i++ {
 			l := []byte{byte(i & 0xff), byte((i >> 8) & 0xff)}
-			tree.AppendLeaf(l, func(NodeID, []byte) {})
+			tree.AppendLeaf(l, nil)
 		}
 		if gotRoot := mustGetRoot(t, tree); !bytes.Equal(gotRoot, test.wantRoot) {
 			t.Errorf("Test (treesize=%v) got root %v, want %v", test.size, b64e(gotRoot), b64e(test.wantRoot))
@@ -285,4 +284,25 @@ func TestRootHashForVariousTreeSizes(t *testing.T) {
 			}
 		}
 	}
+}
+
+func benchmarkAppendLeafHash(b *testing.B, visit VisitFn) {
+	const size = 1024
+	for n := 0; n < b.N; n++ {
+		tree := NewTree(rfc6962.DefaultHasher)
+		for i := 0; i < size; i++ {
+			l := []byte{byte(i & 0xff), byte((i >> 8) & 0xff)}
+			if _, err := tree.AppendLeaf(l, visit); err != nil {
+				b.Fatalf("AppendLeaf: %v", err)
+			}
+		}
+	}
+}
+
+func BenchmarkAppendLeafHash(b *testing.B) {
+	benchmarkAppendLeafHash(b, func(NodeID, []byte) {})
+}
+
+func BenchmarkAppendLeafHashNoVisitor(b *testing.B) {
+	benchmarkAppendLeafHash(b, nil)
 }
