@@ -131,26 +131,6 @@ func NewOperationManager(info OperationInfo, logOperation Operation) *OperationM
 	}
 }
 
-// getActiveLogIDs returns IDs of all currently active logs, regardless of
-// mastership status.
-func (o *OperationManager) getActiveLogIDs(ctx context.Context) ([]int64, error) {
-	tx, err := o.info.Registry.LogStorage.Snapshot(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create transaction: %v", err)
-	}
-	defer tx.Close()
-
-	logIDs, err := tx.GetActiveLogIDs(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get active logIDs: %v", err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit: %v", err)
-	}
-	return logIDs, nil
-}
-
 // logName maps a logID to a human-readable name, caching results along the way.
 // The human-readable name may non-unique so should only be used for diagnostics.
 func (o *OperationManager) logName(ctx context.Context, logID int64) string {
