@@ -221,7 +221,7 @@ func TestGoldenRanges(t *testing.T) {
 }
 
 // Merge down from [339,340) to [0,340) by prepending single entries.
-func TestMergeBackwards(t *testing.T) {
+func TestAppendBackwards(t *testing.T) {
 	const numNodes = uint64(340)
 	tree, visit := newTree(t, numNodes)
 	rng := factory.NewEmptyRange(numNodes)
@@ -245,7 +245,7 @@ func TestMergeBackwards(t *testing.T) {
 
 // Build ranges [0, 13), [13, 26), ... [208,220) by appending single entries to
 // each. Then append those ranges one by one to [0,0), to get [0,220).
-func TestMergeInBatches(t *testing.T) {
+func TestAppendInBatches(t *testing.T) {
 	const numNodes = uint64(220)
 	const batch = uint64(13)
 	tree, visit := newTree(t, numNodes)
@@ -277,7 +277,7 @@ func TestMergeInBatches(t *testing.T) {
 }
 
 // Build many trees of random size by randomly merging their sub-ranges.
-func TestMergeRandomly(t *testing.T) {
+func TestAppendRandomly(t *testing.T) {
 	for seed := int64(1); seed < 100; seed++ {
 		t.Run(fmt.Sprintf("seed:%d", seed), func(t *testing.T) {
 			rnd := rand.New(rand.NewSource(seed))
@@ -308,6 +308,43 @@ func TestMergeRandomly(t *testing.T) {
 			rng := mergeAll(0, numNodes)
 			tree.verifyAllVisited(t, rng)
 		})
+	}
+}
+
+func TestMerge(t *testing.T) {
+	const size = uint64(16)
+	tree, visit := newTree(t, size)
+	getRange := func(begin, end uint64) *Range {
+		cr := factory.NewEmptyRange(begin)
+		for i := begin; i < end; i++ {
+			if err := cr.Append(tree.leaf(i), visit); err != nil {
+				t.Fatalf("Append: %v", err)
+			}
+		}
+		return cr
+	}
+
+	type pair struct {
+		begin, end uint64
+	}
+	var pairs []pair
+	for begin := uint64(0); begin <= size; begin++ {
+		for end := begin; end <= size; end++ {
+			pairs = append(pairs, pair{begin: begin, end: end})
+		}
+	}
+	for _, first := range pairs {
+		for _, second := range pairs {
+			if second.begin < first.begin || second.begin > first.end {
+				continue
+			}
+			rng := getRange(first.begin, first.end)
+			other := getRange(second.begin, second.end)
+			if err := rng.Merge(other, visit); err != nil {
+				t.Fatalf("Merge: %v", err)
+			}
+			tree.verifyRange(t, rng, true)
+		}
 	}
 }
 

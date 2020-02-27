@@ -40,11 +40,8 @@ type RangeFactory struct {
 func (f *RangeFactory) NewRange(begin, end uint64, hashes [][]byte) (*Range, error) {
 	if end < begin {
 		return nil, fmt.Errorf("invalid range: end=%d, want >= %d", end, begin)
-	}
-	left, right := Decompose(begin, end)
-	ones := bits.OnesCount64(left) + bits.OnesCount64(right)
-	if ln := len(hashes); ln != ones {
-		return nil, fmt.Errorf("invalid hashes: got %d values, want %d", ln, ones)
+	} else if ln, want := len(hashes), rangeSize(begin, end); ln != want {
+		return nil, fmt.Errorf("invalid hashes: got %d values, want %d", ln, want)
 	}
 	return &Range{f: f, begin: begin, end: end, hashes: hashes}, nil
 }
@@ -96,7 +93,8 @@ func (r *Range) Append(hash []byte, visitor VisitFn) error {
 
 // AppendRange extends the compact range by merging in the other compact range
 // from the right. It uses the tree hasher to calculate hashes of newly created
-// nodes, and reports them through the visitor function (if non-nil).
+// nodes, and reports them through the visitor function (if non-nil). The other
+// range must begin where the current range ends.
 func (r *Range) AppendRange(other *Range, visitor VisitFn) error {
 	if other.f != r.f {
 		return errors.New("incompatible ranges")
@@ -108,6 +106,32 @@ func (r *Range) AppendRange(other *Range, visitor VisitFn) error {
 		return nil
 	}
 	return r.appendImpl(other.end, other.hashes[0], other.hashes[1:], visitor)
+}
+
+// Merge extends the compact range by merging in the other compact range from
+// the right. It uses the tree hasher to calculate hashes of newly created
+// nodes, and reports them through the visitor function (if non-nil). The other
+// range must begin between the current range's begin and end.
+func (r *Range) Merge(other *Range, visitor VisitFn) error {
+	if other.f != r.f {
+		return errors.New("incompatible ranges")
+	} else if other.begin < r.begin {
+		return errors.New("ranges unordered")
+	}
+	if got, want := other.begin, r.end; got > want {
+		return fmt.Errorf("ranges are disjoint: other.begin=%d, want <= %d", got, want)
+	}
+	if other.end <= r.end { // The other range is nested.
+		return nil
+	}
+
+	left, right := Decompose(other.begin, r.end)
+	r.end -= right
+	r.hashes = r.hashes[:rangeSize(r.begin, r.end)]
+	other.begin += left
+	other.hashes = other.hashes[len(other.hashes)-rangeSize(other.begin, other.end):]
+
+	return r.AppendRange(other, visitor)
 }
 
 // GetRootHash returns the root hash of the Merkle tree represented by this
@@ -227,6 +251,12 @@ func getMergePath(begin, mid, end uint64) (uint, uint) {
 		high = high2
 	}
 	return uint(low), uint(high - 1)
+}
+
+// rangeSize returns the number of nodes in the [begin, end) compact range.
+func rangeSize(begin, end uint64) int {
+	left, right := Decompose(begin, end)
+	return bits.OnesCount64(left) + bits.OnesCount64(right)
 }
 
 // Decompose splits the [begin, end) range into a minimal number of sub-ranges,
