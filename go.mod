@@ -10,7 +10,7 @@ require (
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
 	github.com/apache/beam v2.28.0+incompatible
-	github.com/fullstorydev/grpcurl v1.8.0
+	github.com/fullstorydev/grpcurl v1.8.1
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
@@ -43,7 +43,7 @@ require (
 	golang.org/x/tools v0.1.0
 	google.golang.org/api v0.43.0
 	google.golang.org/genproto v0.0.0-20210331142528-b7513248f0ba
-	google.golang.org/grpc v1.36.1
+	google.golang.org/grpc v1.37.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.1.0
 	google.golang.org/protobuf v1.26.0
 )
