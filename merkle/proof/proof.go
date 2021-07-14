@@ -30,17 +30,17 @@ type NodeFetch struct {
 
 // Consistency returns node addresses for the consistency proof between the
 // given tree sizes.
-func Consistency(size1, size2 int64) ([]NodeFetch, error) {
+func Consistency(size1, size2 uint64) ([]NodeFetch, error) {
 	if size1 == size2 {
 		return []NodeFetch{}, nil
 	}
 
 	// TODO(pavelkalinnikov): Make the capacity estimate accurate.
-	proof := make([]NodeFetch, 0, bits.Len64(uint64(size2))+1)
+	proof := make([]NodeFetch, 0, bits.Len64(size2)+1)
 
 	// Find the biggest perfect subtree that ends at size1.
-	level := uint(bits.TrailingZeros64(uint64(size1)))
-	index := uint64((size1 - 1)) >> level
+	level := uint(bits.TrailingZeros64(size1))
+	index := (size1 - 1) >> level
 	// If it does not cover the whole size1 tree, add this node to the proof.
 	if index != 0 {
 		n := compact.NewNodeID(level, index)
@@ -48,7 +48,7 @@ func Consistency(size1, size2 int64) ([]NodeFetch, error) {
 	}
 
 	// Now append the path from this node to the root of size2.
-	p := Nodes(index, level, uint64(size2), true)
+	p := Nodes(index, level, size2, true)
 	return append(proof, p...), nil
 }
 

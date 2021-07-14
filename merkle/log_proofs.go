@@ -60,7 +60,7 @@ func CalcConsistencyProofNodeAddresses(size1, size2 int64) ([]NodeFetch, error) 
 		return nil, status.Errorf(codes.InvalidArgument, "invalid parameter for consistency proof: size1 %d > size2 %d", size1, size2)
 	}
 
-	return proof.Consistency(size1, size2)
+	return proof.Consistency(uint64(size1), uint64(size2))
 }
 
 // Rehash computes the proof based on the slice of NodeFetch structs, and the
