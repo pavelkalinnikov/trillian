@@ -30,9 +30,9 @@ type NodeFetch struct {
 
 // Consistency returns node addresses for the consistency proof between the
 // given tree sizes.
-func Consistency(size1, size2 uint64) ([]NodeFetch, error) {
+func Consistency(size1, size2 uint64) []NodeFetch {
 	if size1 == size2 {
-		return []NodeFetch{}, nil
+		return []NodeFetch{}
 	}
 
 	// TODO(pavelkalinnikov): Make the capacity estimate accurate.
@@ -49,7 +49,7 @@ func Consistency(size1, size2 uint64) ([]NodeFetch, error) {
 
 	// Now append the path from this node to the root of size2.
 	p := Nodes(index, level, size2, true)
-	return append(proof, p...), nil
+	return append(proof, p...)
 }
 
 // Nodes returns the node IDs necessary to prove that the (level, index) node
