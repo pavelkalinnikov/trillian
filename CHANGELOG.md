@@ -20,6 +20,8 @@
    - `TrillianLog.QueueLeaves`
  * Removed the incomplete Postgres storage backend (#1298).
  * Deprecated `LogRootV1.Revision` field.
+ * Simplified proof generation functions, and moved them to `merkle/proof`
+   package.
 
 ### Storage refactoring
  * `NodeReader.GetMerkleNodes` does not accept revisions anymore. The
